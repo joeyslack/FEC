@@ -1,0 +1,127 @@
+// Contributions by individuals file format
+// https://www.fec.gov/campaign-finance-data/contributions-individuals-file-description/
+
+const fs = require('fs');
+const format = require('pg-format');
+const { Client } = require('pg');
+const { exit } = require('process');
+const client = new Client({
+  host: 'localhost',
+  port: 5432,
+  database: 'FEC',
+  user: 'jslack',
+  password: '',
+});
+
+client.connect()
+
+const tableColumns = [
+  'CMTE_ID',
+  'AMNDT_IND',
+  'RPT_TP',
+  'TRANSACTION_PGI',
+  'IMAGE_NUM',
+  'TRANSACTION_TP',
+  'ENTITY_TP',
+  'NAME',
+  'CITY',
+  'STATE',
+  'ZIP_CODE',
+  'EMPLOYER',
+  'OCCUPATION',
+  'TRANSACTION_DT',
+  'TRANSACTION_AMT',
+  'OTHER_ID',
+  'TRAN_ID',
+  'FILE_NUM',
+  'MEMO_CD',
+  'MEMO_TEXT',
+  'SUB_ID'
+];
+
+const insertData = async (columns, fileName) => {
+  // We must use streams due to size of string/input/buffer
+  const rr = fs.createReadStream(`indiv/${fileName}/itcont.txt`);
+  // Buffer is used to add on previous string that might have been incomplete from previous read
+  let buffer = "";
+
+  rr.on('readable', async () => {
+    // let r = buffer + rr.read().toString();
+    // let rr = rr.read();
+    // let r = (rr && rr.toString() ? (buffer + rr.toString()) : buffer);
+    let r = rr.toString();
+    
+    buffer = "";
+    let batchInsert = [];
+
+    // Reac each line
+    r.split(/\r?\n/).forEach(async line =>  {
+      // console.log('stat', line);
+      let values = [];
+      // Get column
+      let cols = line.split('|');
+      console.log("LINE=", line);
+      
+      if (cols.length === 21) {
+        cols.forEach((val, i) => {
+          // Fix dates. Data set has MMDDYYY
+          // console.log('Val.', val, i, line);
+          if (i === 13 && val !== null && val && val.length > 0) {
+            let [match, mm, dd, yyyy] = val.match(/(\d{2})(\d{2})(\d{4})/);
+            values[i] = `${yyyy}-${mm}-${dd}`;
+          } 
+          // All else
+          else values[i] = val && val.length > 0 ? val : undefined;
+        });
+
+        if (line && values && values.length > 0) {
+          batchInsert.push(values);
+        }
+      }
+      // Data cut off from stream, add it to buffer to be collected on next read
+      else if (cols.length < 21) {
+        console.log('_cut_off_', line);
+        buffer = line;
+      }
+    });
+
+    console.log('AFTER?');
+
+    if (batchInsert && batchInsert.length > 0) {
+      console.log('insert');
+      const insert = `INSERT INTO contributions_by_individuals("${columns.join('","')}") VALUES %L`;
+      await client.query(format(insert, batchInsert), (err, res) => {
+        if (err) {
+          console.log(err.stack)
+          throw(err);
+        } else {
+          console.log(res)
+        }
+
+        batchInsert = [];
+
+      });
+
+      // try {
+      //   if (global.gc) {global.gc();}
+      // } catch (e) {
+      //   console.log("`node --expose-gc index.js`");
+      //   process.exit();
+      // }
+
+    }
+    else {
+      console.log('im here instead', batchInsert);
+      console.log(buffer);
+    }
+  });
+
+  rr.on('end', async () => {
+    console.log('Done!', buffer);
+    process.exit();
+  });
+}
+
+(async() => {
+  await insertData(tableColumns, 'indiv24');
+})()

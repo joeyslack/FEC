@@ -1,0 +1,72 @@
+SELECT *, "NAME", COUNT(DISTINCT "NAME") as count_name 
+FROM contributions_by_individuals 
+GROUP BY contributions_by_individuals."NAME", id
+
+
+
+
+SELECT *, "NAME", COUNT(DISTINCT ("NAME", "CITY", "STATE", "ZIP_CODE")) as count_name 
+FROM contributions_by_individuals 
+GROUP BY contributions_by_individuals."NAME", contributions_by_individuals."CITY", contributions_by_individuals."STATE", contributions_by_individuals."ZIP_CODE", id
+
+
+
+--- so far loaded: 2014 & 2024
+-
+
+
+
+ACTBLUE committee == C00401224
+
+
+///
+
+
+FEC Individual Contributions made to 'ACTBLUE' (Committee ID C00401224) from 2011 - 2024 (current). Complete.
+
+All - 50,580,398 rows
+TX Only = 2,652,449 rows
+
+---------
+
+------------
+MEGA
+jilaker776@fectode.com
+Junker Jorg
+----------
+Dropbox
+jilaker776@fectode.com
+Junker Jorg
+
+----------
+AWS SIGNUP
+jilaker776@fectode.com
+JunkerJorg6
+ (waiting on credit card..)
+
+ 000
+
+https://developers.redhat.com/developer-sandbox
+etqbhpvunfesm@bugfoo.com (https://mail.tm/en/)
+
+database-name
+sampledb
+database-password
+OnC8vXLDpQS6o5WK
+database-user
+userDP7
+
+
+
+
+
+
+-------
+
+
+SELECT * FROM contributions_by_individuals_actblue_ca a
+	LEFT JOIN (SELECT DISTINCT "NAME", COUNT("NAME") as number_of_contributions
+		FROM contributions_by_individuals_actblue_ca b
+		GROUP BY "NAME") results
+	ON results."NAME" = a."NAME"
+ORDER BY number_of_contributions DESC
