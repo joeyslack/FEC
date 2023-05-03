@@ -1,0 +1,13 @@
+.DS_Store
+FEC.dump
+FEC.sql
+FEC_tx.dump
+*.dump
+Query Results_1.csv
+*.csv
+node_modules
+www
+weball
+cm
+indiv
+fec_api_key.txt
